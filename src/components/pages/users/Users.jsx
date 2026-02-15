@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Eye, User, Mail, Phone, Calendar, Shield } from 'lucide-react';
 import { getAllUsers, getUserById, updateUser, deleteUser } from '../../utils/Api';
 
 const Users = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,9 +60,7 @@ const Users = () => {
   };
 
   const handleView = (user) => {
-    setCurrentUser(user);
-    setIsEditing(false);
-    setShowModal(true);
+    navigate(`/users/${user._id}`);
   };
 
   const handleDelete = async (userId) => {
@@ -213,7 +213,7 @@ const Users = () => {
                 <tr key={user._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                      <div className="shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
                         <User className="h-5 w-5 text-gray-600" />
                       </div>
                       <div className="ml-4">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Eye, Square, Users, MapPin, Wifi, Car, Coffee, Check, X, Circle } from 'lucide-react';
 import { 
   getAllTables, 
@@ -9,6 +10,7 @@ import {
 } from '../../utils/Api';
 
 const Tables = () => {
+  const navigate = useNavigate();
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -72,9 +74,7 @@ const Tables = () => {
   };
 
   const handleView = (table) => {
-    setCurrentTable(table);
-    setIsEditing(false);
-    setShowModal(true);
+    navigate(`/tables/${table._id}`);
   };
 
   const handleDelete = async (tableId) => {

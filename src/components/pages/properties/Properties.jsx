@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Eye, Home, MapPin, DollarSign, Ruler, Bed, Car, Check, X } from 'lucide-react';
 import { 
   getAllProperties, 
@@ -12,10 +13,12 @@ import PropertyModal from '../../common/modals/PropertyModal';
 import ConfirmationModal from '../../common/modals/ConfirmationModal';
 
 const Properties = () => {
+  const navigate = useNavigate();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [currentProperty, setCurrentProperty] = useState(null);
@@ -28,23 +31,64 @@ const Properties = () => {
     avgPrice: 0
   });
   const [filters, setFilters] = useState({
-    propertyType: '',
-    listingType: '',
-    city: '',
-    minPrice: '',
-    maxPrice: ''
+    propertyType: searchParams.get('propertyType') || '',
+    listingType: searchParams.get('listingType') || '',
+    city: searchParams.get('city') || '',
+    minPrice: searchParams.get('minPrice') || '',
+    maxPrice: searchParams.get('maxPrice') || ''
+  });
+  const [page, setPage] = useState(parseInt(searchParams.get('page')) || 1);
+  const [limit, setLimit] = useState(parseInt(searchParams.get('limit')) || 12);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 12,
+    hasNextPage: false,
+    hasPrevPage: false
   });
 
   useEffect(() => {
     fetchProperties();
     fetchStats();
-  }, []);
+  }, [page, limit]);
+
+  useEffect(() => {
+    // Update URL parameters when filters or search change
+    const params = {};
+    if (searchTerm) params.search = searchTerm;
+    if (filters.propertyType) params.propertyType = filters.propertyType;
+    if (filters.listingType) params.listingType = filters.listingType;
+    if (filters.city) params.city = filters.city;
+    if (filters.minPrice) params.minPrice = filters.minPrice;
+    if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+    if (page !== 1) params.page = page.toString();
+    if (limit !== 12) params.limit = limit.toString();
+    
+    setSearchParams(params);
+  }, [searchTerm, filters, page, limit]);
 
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const response = await getAllProperties();
+      const params = {
+        page,
+        limit,
+        search: searchTerm || undefined,
+        propertyType: filters.propertyType || undefined,
+        listingType: filters.listingType || undefined,
+        city: filters.city || undefined,
+        minPrice: filters.minPrice || undefined,
+        maxPrice: filters.maxPrice || undefined
+      };
+      
+      const response = await getAllProperties(params);
       setProperties(response.data.data || []);
+      
+      if (response.data.pagination) {
+        setPagination(response.data.pagination);
+      }
+      
       setError(null);
     } catch (err) {
       console.error('Error fetching properties:', err);
@@ -81,8 +125,7 @@ const Properties = () => {
   };
 
   const applyFilters = () => {
-    // Filter logic would be implemented here
-    // For now, we'll just refetch all properties
+    setPage(1); // Reset to first page when applying filters
     fetchProperties();
   };
 
@@ -94,16 +137,19 @@ const Properties = () => {
       minPrice: '',
       maxPrice: ''
     });
+    setSearchTerm('');
+    setPage(1);
     fetchProperties();
   };
 
-  const filteredProperties = properties.filter(property =>
-    property.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.address?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.propertyType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.listingType?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(parseInt(newLimit));
+    setPage(1); // Reset to first page when changing limit
+  };
 
   const handleEdit = (property) => {
     setCurrentProperty(property);
@@ -113,10 +159,7 @@ const Properties = () => {
   };
 
   const handleView = (property) => {
-    setCurrentProperty(property);
-    setPropertyData(property);
-    setIsEditing(false);
-    setShowModal(true);
+    navigate(`/properties/${property._id}`);
   };
 
   const handleDelete = (property) => {
@@ -224,7 +267,7 @@ const Properties = () => {
                 type="text"
                 placeholder="Search properties..."
                 value={searchTerm}
-                onChange={handleSearch}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64"
               />
             </div>
@@ -415,7 +458,7 @@ const Properties = () => {
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-          {filteredProperties.map((property) => (
+          {properties.map((property) => (
             <div 
               key={property._id} 
               className="border rounded-lg p-4 hover:shadow-md transition-shadow border-blue-200 bg-blue-50"
@@ -553,13 +596,82 @@ const Properties = () => {
           ))}
         </div>
         
-        {filteredProperties.length === 0 && (
+        {properties.length === 0 && (
           <div className="text-center py-12">
             <Home className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No properties</h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm ? 'No properties match your search.' : 'No properties found in the system.'}
             </p>
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {pagination.totalItems > 0 && (
+          <div className="border-t border-gray-200 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-700">
+                Showing <span className="font-medium">{(page - 1) * limit + 1}</span> to{' '}
+                <span className="font-medium">{Math.min(page * limit, pagination.totalItems)}</span> of{' '}
+                <span className="font-medium">{pagination.totalItems}</span> results
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700">Items per page:</span>
+                <select
+                  value={limit}
+                  onChange={(e) => handleLimitChange(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="6">6</option>
+                  <option value="12">12</option>
+                  <option value="24">24</option>
+                  <option value="48">48</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={!pagination.hasPrevPage}
+                className={`px-3 py-1 rounded text-sm ${!pagination.hasPrevPage ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                Previous
+              </button>
+              
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (pagination.totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (page <= 3) {
+                    pageNum = i + 1;
+                  } else if (page >= pagination.totalPages - 2) {
+                    pageNum = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1 rounded text-sm ${page === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={!pagination.hasNextPage}
+                className={`px-3 py-1 rounded text-sm ${!pagination.hasNextPage ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

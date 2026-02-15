@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Eye, Building, Users, DollarSign, Star, Check, X } from 'lucide-react';
 import { 
   getAllHotelRooms, 
@@ -12,6 +13,7 @@ import RoomModal from '../../common/modals/RoomModal';
 import ConfirmationModal from '../../common/modals/ConfirmationModal';
 
 const HotelRooms = () => {
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -80,10 +82,7 @@ const HotelRooms = () => {
   };
 
   const handleView = (room) => {
-    setCurrentRoom(room);
-    setRoomData(room);
-    setIsEditing(false);
-    setShowModal(true);
+    navigate(`/hotel-rooms/${room._id}`);
   };
 
   const handleDelete = (room) => {

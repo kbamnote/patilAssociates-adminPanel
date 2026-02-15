@@ -11,6 +11,16 @@ import Bookings from './components/pages/bookings/Bookings';
 import Properties from './components/pages/properties/Properties';
 import PropertyListings from './components/pages/property-listings/PropertyListings';
 import Layout from './components/common/Layout';
+import RestaurantBookingDetails from './components/pages/restaurant-bookings/RestaurantBookingDetails';
+import HotelBookingDetails from './components/pages/bookings/HotelBookingDetails';
+import HotelRoomDetails from './components/pages/hotel-rooms/HotelRoomDetails';
+import PropertyDetails from './components/pages/properties/PropertyDetails';
+import PropertyListingDetails from './components/pages/property-listings/PropertyListingDetails';
+import TableDetails from './components/pages/tables/TableDetails';
+import UserDetails from './components/pages/users/UserDetails';
+import MenuItemDetails from './components/pages/menu-items/MenuItemDetails';
+import Orders from './components/pages/orders/Orders';
+import OrderDetails from './components/pages/orders/OrderDetails';
 import './App.css';
 import Cookies from 'js-cookie';
 
@@ -125,6 +135,17 @@ function App() {
           />
 
           <Route 
+            path="/orders" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <Orders />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
             path="/hotel-rooms" 
             element={
               <ProtectedRoute allowedRoles={['admin']}>
@@ -163,6 +184,106 @@ function App() {
               <ProtectedRoute allowedRoles={['admin']}>
                 <Layout>
                   <PropertyListings />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Detail Pages Routes */}
+          <Route 
+            path="/restaurant-bookings/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <RestaurantBookingDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/bookings/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <HotelBookingDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/hotel-rooms/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <HotelRoomDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/properties/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <PropertyDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/property-listings/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <PropertyListingDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/tables/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <TableDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/users/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <UserDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/menu-items/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <MenuItemDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/orders/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <OrderDetails />
                 </Layout>
               </ProtectedRoute>
             } 

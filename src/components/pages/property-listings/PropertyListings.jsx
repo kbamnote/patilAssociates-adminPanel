@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Eye, Calendar, User, Mail, Phone, CheckCircle, Clock, XCircle, Calendar as CalendarIcon, DollarSign } from 'lucide-react';
 import { 
   getAllPropertyListings, 
@@ -9,6 +10,7 @@ import {
 import ConfirmationModal from '../../common/modals/ConfirmationModal';
 
 const PropertyListings = () => {
+  const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -88,8 +90,7 @@ const PropertyListings = () => {
   );
 
   const handleView = (listing) => {
-    setCurrentListing(listing);
-    setShowViewModal(true);
+    navigate(`/property-listings/${listing._id}`);
   };
 
   const handleUpdateStatus = async (listingId, newStatus) => {

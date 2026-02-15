@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Eye, Calendar, Clock, Users, Bed, CheckCircle, XCircle, DollarSign } from 'lucide-react';
 import { 
   getAllBookings, 
@@ -13,6 +14,7 @@ import BookingModal from '../../common/modals/BookingModal';
 import ConfirmationModal from '../../common/modals/ConfirmationModal';
 
 const Bookings = () => {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -132,10 +134,7 @@ const Bookings = () => {
   };
 
   const handleView = (booking) => {
-    setCurrentBooking(booking);
-    setBookingData(booking);
-    setIsEditing(false);
-    setShowModal(true);
+    navigate(`/bookings/${booking._id}`);
   };
 
   const handleDelete = (booking) => {

@@ -13,7 +13,8 @@ import {
   Settings,
   BarChart3,
   FileText,
-  Shield
+  Shield,
+  Receipt
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
@@ -47,7 +48,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       submenu: [
         { name: 'Bookings', href: '/restaurant-bookings' },
         { name: 'Tables', href: '/tables' },
-        { name: 'Menu Items', href: '/menu-items' }
+        { name: 'Menu Items', href: '/menu-items' },
+        { name: 'Orders', href: '/orders' }
       ]
     },
     { 

@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Eye, Calendar, Clock, Users, MapPin, CheckCircle, XCircle, Clock as ClockIcon } from 'lucide-react';
 import { 
   getAllRestaurants, 
   getRestaurantBookingById, 
   updateRestaurantBooking, 
   deleteRestaurantBooking, 
-  createRestaurantBooking 
+  createRestaurantBooking,
+  createOrderFromBooking,
+  getAllOrders
 } from '../../utils/Api';
+import ConfirmationModal from '../../common/modals/ConfirmationModal';
+import SuccessModal from '../../common/modals/SuccessModal';
 
 const RestaurantBookings = () => {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [orderMap, setOrderMap] = useState(new Map()); // Map to track which bookings have orders
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [showModal, setShowModal] = useState(false);
   const [currentBooking, setCurrentBooking] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -25,21 +33,71 @@ const RestaurantBookings = () => {
     status: 'pending',
     customerId: ''
   });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteItemId, setDeleteItemId] = useState(null);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [bookingToConvert, setBookingToConvert] = useState(null);
+  const [conversionData, setConversionData] = useState({
+    gstPercentage: 18,
+    discountPercentage: 0,
+    billNotes: ''
+  });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [page, setPage] = useState(parseInt(searchParams.get('page')) || 1);
+  const [limit, setLimit] = useState(parseInt(searchParams.get('limit')) || 12);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 12,
+    hasNextPage: false,
+    hasPrevPage: false
+  });
 
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [page, limit]);
+
+  useEffect(() => {
+    // Fetch orders to check which bookings already have orders
+    if (bookings.length > 0) {
+      fetchOrdersForBookings();
+    }
+  }, [bookings]);
+
+  useEffect(() => {
+    // Update URL parameters when search changes
+    const params = {};
+    if (searchTerm) params.search = searchTerm;
+    if (page !== 1) params.page = page.toString();
+    if (limit !== 12) params.limit = limit.toString();
+    
+    setSearchParams(params);
+  }, [searchTerm, page, limit]);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await getAllRestaurants();
+      const params = {
+        page,
+        limit,
+        search: searchTerm || undefined
+      };
+      
+      const response = await getAllRestaurants(params);
       console.log('Restaurant bookings response:', response.data);
       
       // Ensure we're getting an array of bookings
       const bookingsData = Array.isArray(response.data.data) ? response.data.data : [];
       console.log('Processed bookings data:', bookingsData);
       setBookings(bookingsData);
+      
+      // Set pagination data if available
+      if (response.data.pagination) {
+        setPagination(response.data.pagination);
+      }
+      
       setError(null);
     } catch (err) {
       console.error('Error fetching bookings:', err);
@@ -55,8 +113,29 @@ const RestaurantBookings = () => {
     }
   };
 
+  const fetchOrdersForBookings = async () => {
+    try {
+      // Fetch all orders to create a mapping of bookingId -> orderId
+      const response = await getAllOrders({ page: 1, limit: 1000 }); // Fetch all orders
+      const orders = response.data.data || [];
+      
+      const newOrderMap = new Map();
+      orders.forEach(order => {
+        if (order.bookingId) {
+          newOrderMap.set(order.bookingId.toString(), order._id);
+        }
+      });
+      
+      setOrderMap(newOrderMap);
+      console.log('Order map created:', newOrderMap);
+    } catch (err) {
+      console.error('Error fetching orders for mapping:', err);
+    }
+  };
+
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
+    setPage(1); // Reset to first page when searching
   };
 
   const filteredBookings = bookings.filter(booking =>
@@ -91,19 +170,74 @@ const RestaurantBookings = () => {
   };
 
   const handleView = (booking) => {
-    setCurrentBooking(booking);
-    setIsEditing(false);
-    setShowModal(true);
+    navigate(`/restaurant-bookings/${booking._id}`);
   };
 
-  const handleDelete = async (bookingId) => {
-    if (window.confirm('Are you sure you want to delete this booking?')) {
-      try {
-        await deleteRestaurantBooking(bookingId);
-        fetchBookings(); // Refresh the list
-      } catch (err) {
-        setError('Failed to delete booking. Please try again.');
+  const handleDeleteClick = (bookingId) => {
+    setDeleteItemId(bookingId);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteRestaurantBooking(deleteItemId);
+      setShowDeleteModal(false);
+      setDeleteItemId(null);
+      fetchBookings();
+    } catch (err) {
+      setError('Failed to delete booking. Please try again.');
+      setShowDeleteModal(false);
+    }
+  };
+
+  const handleConvertToOrder = (booking) => {
+    console.log('Booking data for conversion:', booking);
+    console.log('Booking customerId:', booking.customerId);
+    console.log('Booking customerName:', booking.customerName);
+    console.log('Booking customerEmail:', booking.customerEmail);
+    
+    setBookingToConvert(booking);
+    setConversionData({
+      gstPercentage: 18,
+      discountPercentage: 0,
+      billNotes: ''
+    });
+    setShowConvertModal(true);
+  };
+
+  const handleConvertConfirm = async () => {
+    try {
+      const orderData = {
+        bookingId: bookingToConvert._id,
+        gstPercentage: conversionData.gstPercentage,
+        discountPercentage: conversionData.discountPercentage,
+        billNotes: conversionData.billNotes
+      };
+      
+      // Only include customerId if it exists
+      if (bookingToConvert.customerId) {
+        orderData.customerId = bookingToConvert.customerId;
       }
+      
+      console.log('Converting booking to order:', orderData);
+      
+      await createOrderFromBooking(orderData);
+      setShowConvertModal(false);
+      setBookingToConvert(null);
+      
+      // Show success message
+      setSuccessMessage('Order created successfully!');
+      setShowSuccessModal(true);
+      
+      // Update the order map to reflect the new order
+      setOrderMap(prev => new Map(prev.set(bookingToConvert._id.toString(), 'temp-id')));
+      
+      // Optionally refresh the page or navigate to orders page
+      // navigate('/orders');
+    } catch (err) {
+      console.error('Error converting to order:', err);
+      setError(`Failed to create order: ${err.response?.data?.message || err.message || 'Please try again.'}`);
+      setShowConvertModal(false);
     }
   };
 
@@ -179,6 +313,15 @@ const RestaurantBookings = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(parseInt(newLimit));
+    setPage(1); // Reset to first page when changing limit
   };
 
   if (loading) {
@@ -322,7 +465,7 @@ const RestaurantBookings = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredBookings.map((booking) => (
+              {bookings.map((booking) => (
                 <tr key={booking._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
@@ -379,6 +522,20 @@ const RestaurantBookings = () => {
                         <Eye className="h-4 w-4" />
                       </button>
                       <button
+                        onClick={() => handleConvertToOrder(booking)}
+                        className={`p-1 rounded ${!booking.orderDetails || booking.orderDetails.length === 0 || orderMap.has(booking._id.toString())
+                          ? 'text-gray-400 cursor-not-allowed' 
+                          : 'text-green-600 hover:text-green-900 hover:bg-green-50'}`}
+                        title={!booking.orderDetails || booking.orderDetails.length === 0 
+                          ? 'Booking has no order details to convert' 
+                          : orderMap.has(booking._id.toString())
+                          ? 'Order already exists for this booking'
+                          : 'Convert to Order'}
+                        disabled={!booking.orderDetails || booking.orderDetails.length === 0 || orderMap.has(booking._id.toString())}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                      <button
                         onClick={() => handleEdit(booking)}
                         className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
                         title="Edit Booking"
@@ -386,7 +543,7 @@ const RestaurantBookings = () => {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(booking._id)}
+                        onClick={() => handleDeleteClick(booking._id)}
                         className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                         title="Delete Booking"
                       >
@@ -400,13 +557,82 @@ const RestaurantBookings = () => {
           </table>
         </div>
         
-        {filteredBookings.length === 0 && (
+        {bookings.length === 0 && (
           <div className="text-center py-12">
             <Calendar className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No bookings</h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm ? 'No bookings match your search.' : 'No bookings found in the system.'}
             </p>
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {pagination.totalItems > 0 && (
+          <div className="border-t border-gray-200 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-700">
+                Showing <span className="font-medium">{(page - 1) * limit + 1}</span> to{' '}
+                <span className="font-medium">{Math.min(page * limit, pagination.totalItems)}</span> of{' '}
+                <span className="font-medium">{pagination.totalItems}</span> results
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700">Items per page:</span>
+                <select
+                  value={limit}
+                  onChange={(e) => handleLimitChange(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="6">6</option>
+                  <option value="12">12</option>
+                  <option value="24">24</option>
+                  <option value="48">48</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={!pagination.hasPrevPage}
+                className={`px-3 py-1 rounded text-sm ${!pagination.hasPrevPage ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                Previous
+              </button>
+              
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (pagination.totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (page <= 3) {
+                    pageNum = i + 1;
+                  } else if (page >= pagination.totalPages - 2) {
+                    pageNum = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1 rounded text-sm ${page === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={!pagination.hasNextPage}
+                className={`px-3 py-1 rounded text-sm ${!pagination.hasNextPage ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -575,6 +801,143 @@ const RestaurantBookings = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Booking"
+        message="Are you sure you want to delete this booking? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      {/* Convert to Order Modal */}
+      {showConvertModal && bookingToConvert && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full max-h-screen overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-800">Convert to Order</h2>
+                <button
+                  onClick={() => setShowConvertModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-medium text-gray-800 mb-2">Booking Details</h3>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Customer:</span>{' '}
+                    {typeof bookingToConvert.customerId === 'object' && bookingToConvert.customerId 
+                      ? `${bookingToConvert.customerId.fullName || bookingToConvert.customerId.email}`
+                      : bookingToConvert.customerName || bookingToConvert.customerId || 'N/A'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Party Size:</span> {bookingToConvert.partySize}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Date:</span> {new Date(bookingToConvert.bookingDate).toLocaleDateString()}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Time:</span> {bookingToConvert.bookingTime}
+                  </p>
+                  {bookingToConvert.tableNumber && (
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Table:</span> {bookingToConvert.tableNumber}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    GST Percentage (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={conversionData.gstPercentage}
+                    onChange={(e) => setConversionData(prev => ({
+                      ...prev,
+                      gstPercentage: parseFloat(e.target.value) || 0
+                    }))}
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Discount Percentage (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={conversionData.discountPercentage}
+                    onChange={(e) => setConversionData(prev => ({
+                      ...prev,
+                      discountPercentage: parseFloat(e.target.value) || 0
+                    }))}
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bill Notes
+                  </label>
+                  <textarea
+                    value={conversionData.billNotes}
+                    onChange={(e) => setConversionData(prev => ({
+                      ...prev,
+                      billNotes: e.target.value
+                    }))}
+                    rows="3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Any special notes for this bill..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowConvertModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConvertConfirm}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
+                >
+                  Create Order
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Success"
+        message={successMessage}
+        onConfirm={() => {
+          setShowSuccessModal(false);
+          fetchBookings(); // Refresh the bookings list
+        }}
+        confirmText="OK"
+      />
     </div>
   );
 };
