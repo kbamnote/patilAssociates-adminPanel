@@ -8,6 +8,8 @@ import {
   deleteTable, 
   createTable 
 } from '../../utils/Api';
+import DeleteModal from '../../common/modals/DeleteModal';
+import TableModal from '../../common/modals/TableModal';
 
 const Tables = () => {
   const navigate = useNavigate();
@@ -15,18 +17,11 @@ const Tables = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [currentTable, setCurrentTable] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    tableNumber: '',
-    capacity: 4,
-    location: 'indoor',
-    shape: 'square',
-    features: [],
-    isActive: true,
-    notes: ''
-  });
+  const [tableToDelete, setTableToDelete] = useState(null);
 
   useEffect(() => {
     fetchTables();
@@ -60,74 +55,47 @@ const Tables = () => {
 
   const handleEdit = (table) => {
     setCurrentTable(table);
-    setFormData({
-      tableNumber: table.tableNumber,
-      capacity: table.capacity,
-      location: table.location,
-      shape: table.shape,
-      features: table.features || [],
-      isActive: table.isActive,
-      notes: table.notes || ''
-    });
     setIsEditing(true);
-    setShowModal(true);
+    setShowTableModal(true);
   };
 
   const handleView = (table) => {
     navigate(`/tables/${table._id}`);
   };
 
-  const handleDelete = async (tableId) => {
-    if (window.confirm('Are you sure you want to delete this table?')) {
-      try {
-        await deleteTable(tableId);
-        fetchTables(); // Refresh the list
-      } catch (err) {
-        setError('Failed to delete table. Please try again.');
-      }
+  const handleDeleteClick = (table) => {
+    setTableToDelete(table);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteTable(tableToDelete._id);
+      setShowDeleteModal(false);
+      setTableToDelete(null);
+      fetchTables(); // Refresh the list
+    } catch (err) {
+      setError('Failed to delete table. Please try again.');
+      setShowDeleteModal(false);
     }
   };
 
-  const handleSave = async () => {
+  const handleTableSave = async (formData, tableId) => {
     try {
       if (isEditing) {
-        await updateTable(currentTable._id, formData);
+        await updateTable(tableId, formData);
       } else {
         await createTable(formData);
       }
-      setShowModal(false);
+      setShowTableModal(false);
       setCurrentTable(null);
-      setFormData({
-        tableNumber: '',
-        capacity: 4,
-        location: 'indoor',
-        shape: 'square',
-        features: [],
-        isActive: true,
-        notes: ''
-      });
       fetchTables(); // Refresh the list
     } catch (err) {
       setError('Failed to save table. Please try again.');
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
 
-  const handleFeatureChange = (feature) => {
-    setFormData(prev => ({
-      ...prev,
-      features: prev.features.includes(feature)
-        ? prev.features.filter(f => f !== feature)
-        : [...prev.features, feature]
-    }));
-  };
 
   const getLocationColor = (location) => {
     switch (location) {
@@ -192,16 +160,7 @@ const Tables = () => {
               onClick={() => {
                 setIsEditing(false);
                 setCurrentTable(null);
-                setFormData({
-                  tableNumber: '',
-                  capacity: 4,
-                  location: 'indoor',
-                  shape: 'square',
-                  features: [],
-                  isActive: true,
-                  notes: ''
-                });
-                setShowModal(true);
+                setShowTableModal(true);
               }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
@@ -313,7 +272,7 @@ const Tables = () => {
                     <Edit className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(table._id)}
+                    onClick={() => handleDeleteClick(table)}
                     className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                     title="Delete Table"
                   >
@@ -385,188 +344,25 @@ const Tables = () => {
         )}
       </div>
 
-      {/* Modal for View/Edit Table */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full max-h-screen overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  {isEditing ? 'Edit Table' : 'Create New Table'}
-                </h2>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
-              </div>
+      {/* Table Modal */}
+      <TableModal
+        isOpen={showTableModal}
+        onClose={() => setShowTableModal(false)}
+        onSave={handleTableSave}
+        tableData={currentTable}
+        isEditing={isEditing}
+      />
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Table Number
-                    </label>
-                    <input
-                      type="text"
-                      name="tableNumber"
-                      value={formData.tableNumber}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Capacity
-                    </label>
-                    <input
-                      type="number"
-                      name="capacity"
-                      value={formData.capacity}
-                      onChange={handleInputChange}
-                      min="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Location
-                    </label>
-                    <select
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="indoor">Indoor</option>
-                      <option value="outdoor">Outdoor</option>
-                      <option value="patio">Patio</option>
-                      <option value="vip">VIP</option>
-                      <option value="bar_area">Bar Area</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Shape
-                    </label>
-                    <select
-                      name="shape"
-                      value={formData.shape}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="round">Round</option>
-                      <option value="square">Square</option>
-                      <option value="rectangle">Rectangle</option>
-                      <option value="oval">Oval</option>
-                      <option value="semi_circle">Semi-Circle</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Features
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      'window_view', 'quiet_corner', 'near_bar', 
-                      'accessible', 'high_top', 'booth'
-                    ].map(feature => (
-                      <label key={feature} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.features.includes(feature)}
-                          onChange={() => handleFeatureChange(feature)}
-                          className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                        />
-                        <span className="ml-2 text-sm text-gray-700 capitalize">
-                          {feature.replace('_', ' ')}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={formData.isActive}
-                    onChange={handleInputChange}
-                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                  />
-                  <label className="ml-2 text-sm font-medium text-gray-700">
-                    Active
-                  </label>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notes
-                  </label>
-                  <textarea
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="Additional notes about this table..."
-                  />
-                </div>
-
-                {currentTable && !isEditing && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Table ID
-                      </label>
-                      <p className="text-gray-900 font-mono text-sm">{currentTable._id}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Created At
-                      </label>
-                      <p className="text-gray-900">
-                        {currentTable.createdAt ? new Date(currentTable.createdAt).toLocaleString() : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Updated At
-                      </label>
-                      <p className="text-gray-900">
-                        {currentTable.updatedAt ? new Date(currentTable.updatedAt).toLocaleString() : 'N/A'}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
-                >
-                  {isEditing ? 'Update Table' : 'Create Table'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete Confirmation Modal */}
+      <DeleteModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Table"
+        itemName={tableToDelete ? `Table ${tableToDelete.tableNumber}` : ''}
+        confirmText="Delete Table"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

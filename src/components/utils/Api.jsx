@@ -214,6 +214,16 @@ export const deleteOrder = (id) => Api.delete(`/billing/${id}`);
 export const generateBill = (id) => Api.get(`/billing/${id}/bill`);
 export const updateOrderPayment = (id, data) => Api.put(`/billing/${id}`, data);
 
+// Profile APIs
+export const getUserProfile = () => Api.get('/profile');
+export const updateUserProfile = (data) => Api.put('/profile', data);
+export const uploadProfilePicture = (formData) => Api.post('/profile/picture', formData, {
+  headers: { "Content-Type": "multipart/form-data" }
+});
+export const uploadDocument = (formData) => Api.post('/profile/document', formData, {
+  headers: { "Content-Type": "multipart/form-data" }
+});
+
 export const getBillStats = async () => {
   try {
     const statsRes = await Api.get('/billing/stats');

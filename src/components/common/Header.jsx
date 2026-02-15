@@ -66,11 +66,11 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
   };
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-64 bg-white shadow z-10"> {/* Make header fixed */}
-      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
+    <header className="fixed top-0 right-0 left-0 lg:left-64 bg-white shadow z-10 h-16 flex items-center"> {/* Make header fixed and set height */}
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-full">
         <div className="flex items-center">
           <button
-            className="md:hidden mr-4 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="lg:hidden mr-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
             onClick={toggleSidebar}
             aria-label="Toggle sidebar"
           >
@@ -79,15 +79,15 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
           {shouldShowBackButton() && (
             <button
               onClick={() => navigate(-1)}
-              className="mr-4 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="mr-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
               aria-label="Go back"
             >
               <ArrowLeft className="h-5 w-5 text-gray-800" />
             </button>
           )}
-          <h1 className="text-2xl font-bold text-gray-800">{getPageTitle()}</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800 truncate max-w-[200px] sm:max-w-[300px]">{getPageTitle()}</h1>
         </div>
-        <div className="text-sm font-medium text-gray-600">
+        <div className="text-xs sm:text-sm font-medium text-gray-600 hidden sm:block">
           {getCurrentDate()}
         </div>
       </div>

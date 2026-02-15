@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Eye, User, Mail, Phone, Calendar, Shield } from 'lucide-react';
 import { getAllUsers, getUserById, updateUser, deleteUser } from '../../utils/Api';
+import DeleteModal from '../../common/modals/DeleteModal';
 
 const Users = () => {
   const navigate = useNavigate();
@@ -10,8 +11,10 @@ const Users = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -63,14 +66,20 @@ const Users = () => {
     navigate(`/users/${user._id}`);
   };
 
-  const handleDelete = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await deleteUser(userId);
-        fetchUsers(); // Refresh the list
-      } catch (err) {
-        setError('Failed to delete user. Please try again.');
-      }
+  const handleDeleteClick = (user) => {
+    setUserToDelete(user);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteUser(userToDelete._id);
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+      fetchUsers(); // Refresh the list
+    } catch (err) {
+      setError('Failed to delete user. Please try again.');
+      setShowDeleteModal(false);
     }
   };
 
@@ -270,7 +279,7 @@ const Users = () => {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(user._id)}
+                        onClick={() => handleDeleteClick(user)}
                         className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                         title="Delete User"
                       >
@@ -450,6 +459,17 @@ const Users = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete User"
+        itemName={userToDelete ? userToDelete.fullName : ''}
+        confirmText="Delete User"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

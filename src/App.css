@@ -24,4 +24,68 @@
   overflow: hidden;
 }
 
+/* Responsive improvements */
+@media (max-width: 1023px) {
+  /* Adjust main content when sidebar is open */
+  .sidebar-open main {
+    margin-left: 0;
+  }
+  
+  /* Reduce spacing on mobile */
+  .mobile-padding {
+    padding: 0.5rem;
+  }
+  
+  /* Adjust table layouts on small screens */
+  .responsive-table {
+    overflow-x: auto;
+  }
+  
+  /* Ensure images scale properly */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
 
+/* Improve touch targets for mobile */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem;
+}
+
+/* Responsive grid adjustments */
+.responsive-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .responsive-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Desktop sidebar layout - ensure sidebar space is reserved */
+@media (min-width: 1024px) {
+  main {
+    margin-left: 16rem; /* 64 * 4 = 16rem which equals the sidebar width */
+  }
+  
+  .sidebar-open main {
+    margin-left: 16rem; /* Keep the same margin when sidebar is open on desktop */
+  }
+}
