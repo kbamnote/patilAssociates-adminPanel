@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Building, MapPin, Users, DollarSign, Star } from 'lucide-react';
 
 const RoomModal = ({ 
@@ -8,19 +8,120 @@ const RoomModal = ({
   roomData = {},
   isEditing = false
 }) => {
+  const [formData, setFormData] = useState({
+    roomNumber: '',
+    capacity: 1,
+    roomType: 'single',
+    floor: 1,
+    pricePerNight: '',
+    viewType: 'none',
+    bedType: 'single',
+    size: '',
+    description: '',
+    isActive: true,
+    amenities: []
+  });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+
+  useEffect(() => {
+    if (roomData && isEditing) {
+      setFormData({
+        roomNumber: roomData.roomNumber || '',
+        capacity: roomData.capacity || 1,
+        roomType: roomData.roomType || 'single',
+        floor: roomData.floor || 1,
+        pricePerNight: roomData.pricePerNight || '',
+        viewType: roomData.viewType || 'none',
+        bedType: roomData.bedType || 'single',
+        size: roomData.size || '',
+        description: roomData.description || '',
+        isActive: roomData.isActive !== false,
+        amenities: roomData.amenities || []
+      });
+      if (roomData.images && roomData.images.length > 0) {
+        setImagePreview(roomData.images[0]); // Show first image as preview
+      }
+    } else {
+      resetForm();
+    }
+  }, [roomData, isEditing, isOpen]);
+
+  const resetForm = () => {
+    setFormData({
+      roomNumber: '',
+      capacity: 1,
+      roomType: 'single',
+      floor: 1,
+      pricePerNight: '',
+      viewType: 'none',
+      bedType: 'single',
+      size: '',
+      description: '',
+      isActive: true,
+      amenities: []
+    });
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    onSave(roomData);
-    onClose();
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : (name === 'capacity' || name === 'floor' || name === 'pricePerNight' || name === 'size' ? 
+        (value === '' ? (name === 'capacity' || name === 'floor' ? 1 : '') : parseFloat(value)) : value)
+    }));
   };
 
   const handleAmenityChange = (amenity) => {
-    const currentAmenities = roomData.amenities || [];
-    const newAmenities = currentAmenities.includes(amenity)
-      ? currentAmenities.filter(a => a !== amenity)
-      : [...currentAmenities, amenity];
-    onSave({...roomData, amenities: newAmenities});
+    setFormData(prev => ({
+      ...prev,
+      amenities: prev.amenities.includes(amenity)
+        ? prev.amenities.filter(a => a !== amenity)
+        : [...prev.amenities, amenity]
+    }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = () => {
+    const submitData = new FormData();
+    
+    // Add all form fields
+    Object.keys(formData).forEach(key => {
+      if (key === 'amenities') {
+        formData[key].forEach(item => submitData.append(key, item));
+      } else {
+        submitData.append(key, formData[key]);
+      }
+    });
+
+    // Add image file if selected
+    if (imageFile) {
+      submitData.append('images', imageFile);
+    }
+
+    onSave(submitData, roomData._id);
+    resetForm();
+    onClose();
+  };
+
+  const handleCancel = () => {
+    resetForm();
+    onClose();
   };
 
   return (
@@ -32,7 +133,7 @@ const RoomModal = ({
               {isEditing ? 'Edit Room' : 'Add New Room'}
             </h2>
             <button
-              onClick={onClose}
+              onClick={handleCancel}
               className="text-gray-400 hover:text-gray-600"
             >
               <X className="h-5 w-5" />
@@ -48,8 +149,9 @@ const RoomModal = ({
                 </label>
                 <input
                   type="text"
-                  value={roomData.roomNumber || ''}
-                  onChange={(e) => onSave({...roomData, roomNumber: e.target.value})}
+                  name="roomNumber"
+                  value={formData.roomNumber}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="101"
                   required
@@ -63,8 +165,9 @@ const RoomModal = ({
                 </label>
                 <input
                   type="number"
-                  value={roomData.capacity || 1}
-                  onChange={(e) => onSave({...roomData, capacity: parseInt(e.target.value)})}
+                  name="capacity"
+                  value={formData.capacity}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   min="1"
                   required
@@ -78,8 +181,9 @@ const RoomModal = ({
                   Room Type
                 </label>
                 <select
-                  value={roomData.roomType || 'single'}
-                  onChange={(e) => onSave({...roomData, roomType: e.target.value})}
+                  name="roomType"
+                  value={formData.roomType}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="single">Single</option>
@@ -98,8 +202,9 @@ const RoomModal = ({
                 </label>
                 <input
                   type="number"
-                  value={roomData.floor || 1}
-                  onChange={(e) => onSave({...roomData, floor: parseInt(e.target.value)})}
+                  name="floor"
+                  value={formData.floor}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   min="1"
                 />
@@ -114,8 +219,9 @@ const RoomModal = ({
                 </label>
                 <input
                   type="number"
-                  value={roomData.pricePerNight || ''}
-                  onChange={(e) => onSave({...roomData, pricePerNight: parseFloat(e.target.value)})}
+                  name="pricePerNight"
+                  value={formData.pricePerNight}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="2500"
                   min="0"
@@ -128,8 +234,9 @@ const RoomModal = ({
                   View Type
                 </label>
                 <select
-                  value={roomData.viewType || 'none'}
-                  onChange={(e) => onSave({...roomData, viewType: e.target.value})}
+                  name="viewType"
+                  value={formData.viewType}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="none">None</option>
@@ -148,8 +255,9 @@ const RoomModal = ({
                   Bed Type
                 </label>
                 <select
-                  value={roomData.bedType || 'single'}
-                  onChange={(e) => onSave({...roomData, bedType: e.target.value})}
+                  name="bedType"
+                  value={formData.bedType}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="single">Single</option>
@@ -167,12 +275,49 @@ const RoomModal = ({
                 </label>
                 <input
                   type="number"
-                  value={roomData.size || ''}
-                  onChange={(e) => onSave({...roomData, size: parseFloat(e.target.value)})}
+                  name="size"
+                  value={formData.size}
+                  onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="300"
                   min="0"
                 />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Room Image
+              </label>
+              <div className="flex items-center space-x-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                {(imagePreview || (roomData && roomData.images && roomData.images.length > 0 && !isEditing)) && (
+                  <div className="flex items-center space-x-2">
+                    <img 
+                      src={imagePreview || roomData.images[0]} 
+                      alt="Room Preview" 
+                      className="h-16 w-16 object-cover rounded-lg border"
+                    />
+                    {isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview(null);
+                          setFormData(prev => ({ ...prev, images: [] }));
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -185,7 +330,7 @@ const RoomModal = ({
                   <label key={amenity} className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={(roomData.amenities || []).includes(amenity)}
+                      checked={formData.amenities.includes(amenity)}
                       onChange={() => handleAmenityChange(amenity)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -202,8 +347,9 @@ const RoomModal = ({
                 Description
               </label>
               <textarea
-                value={roomData.description || ''}
-                onChange={(e) => onSave({...roomData, description: e.target.value})}
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
                 rows="3"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Room description..."
@@ -213,8 +359,9 @@ const RoomModal = ({
             <div className="flex items-center">
               <input
                 type="checkbox"
-                checked={roomData.isActive !== false}
-                onChange={(e) => onSave({...roomData, isActive: e.target.checked})}
+                name="isActive"
+                checked={formData.isActive}
+                onChange={handleInputChange}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <label className="ml-2 text-sm font-medium text-gray-700">
@@ -225,7 +372,7 @@ const RoomModal = ({
 
           <div className="flex justify-end space-x-3 mt-6">
             <button
-              onClick={onClose}
+              onClick={handleCancel}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
               Cancel

@@ -102,10 +102,10 @@ const HotelRooms = () => {
     }
   };
 
-  const handleSave = async (data) => {
+  const handleSave = async (data, id) => {
     try {
-      if (isEditing) {
-        await updateHotelRoom(currentRoom._id, data);
+      if (isEditing && id) {
+        await updateHotelRoom(id, data);
       } else {
         await createHotelRoom(data);
       }

@@ -94,9 +94,13 @@ export const getAllHotelRooms = (params = {}) => {
   return Api.get("/hotel/rooms", { params: queryParams });
 };
 export const getHotelRoomStats = () => Api.get("/hotel/rooms/stats");
-export const createHotelRoom = (data) => Api.post("/hotel/rooms", data);
+export const createHotelRoom = (data) => Api.post("/hotel/rooms", data, {
+  headers: { "Content-Type": "multipart/form-data" }
+});
 export const getHotelRoomById = (id) => Api.get(`/hotel/rooms/${id}`);
-export const updateHotelRoom = (id, data) => Api.put(`/hotel/rooms/${id}`, data);
+export const updateHotelRoom = (id, data) => Api.put(`/hotel/rooms/${id}`, data, {
+  headers: { "Content-Type": "multipart/form-data" }
+});
 export const deleteHotelRoom = (id) => Api.delete(`/hotel/rooms/${id}`);
 export const getAvailableRooms = (params) => Api.get("/hotel/rooms/available", { params });
 
