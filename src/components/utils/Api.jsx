@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import axios from "axios";
 import Cookies from "js-cookie";
 
@@ -272,3 +273,18 @@ export const getBillStats = async () => {
     }
   }
 };
+
+// Query Management APIs
+export const getAllQueries = (params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get("/queries", { params: queryParams });
+};
+
+export const getQueryStats = () => Api.get("/queries/stats");
+
+export const getQueryById = (id) => Api.get(`/queries/${id}`);
+
+export const updateQueryStatus = (id, data) => Api.put(`/queries/${id}/status`, data);
+
+export const deleteQuery = (id) => Api.delete(`/queries/${id}`);

@@ -39,7 +39,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       name: 'Management', 
       icon: Shield,
       submenu: [
-        { name: 'Users', href: '/users' }
+        { name: 'Users', href: '/users' },
+        { name: 'Queries', href: '/queries' }
       ]
     },
     { 

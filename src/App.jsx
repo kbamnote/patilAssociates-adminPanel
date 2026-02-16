@@ -21,6 +21,8 @@ import UserDetails from './components/pages/users/UserDetails';
 import MenuItemDetails from './components/pages/menu-items/MenuItemDetails';
 import Orders from './components/pages/orders/Orders';
 import OrderDetails from './components/pages/orders/OrderDetails';
+import Queries from './components/pages/queries/Queries';
+import QueryDetails from './components/pages/queries/QueryDetails';
 import './App.css';
 import Cookies from 'js-cookie';
 
@@ -284,6 +286,28 @@ function App() {
               <ProtectedRoute allowedRoles={['admin']}>
                 <Layout>
                   <OrderDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/queries" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <Queries />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/queries/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <QueryDetails />
                 </Layout>
               </ProtectedRoute>
             } 
