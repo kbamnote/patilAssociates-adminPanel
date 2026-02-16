@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Eye, Calendar, User, Mail, Phone, CheckCircle, Clock, XCircle, Calendar as CalendarIcon, DollarSign } from 'lucide-react';

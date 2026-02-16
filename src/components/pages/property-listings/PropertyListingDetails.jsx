@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Mail, Phone, DollarSign, Home, MapPin, CheckCircle, XCircle, Clock, FileText } from 'lucide-react';

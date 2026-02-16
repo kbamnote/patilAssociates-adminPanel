@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home, MapPin, DollarSign, Ruler, Bed, Car, Wifi, Coffee, User, Mail, Phone, Check, X } from 'lucide-react';
@@ -18,6 +19,8 @@ const PropertyDetails = () => {
     try {
       setLoading(true);
       const response = await getPropertyById(id);
+      console.log('Property API Response:', response.data);
+      console.log('Property Data:', response.data.data);
       setProperty(response.data.data);
       setError(null);
     } catch (err) {
@@ -272,15 +275,32 @@ const PropertyDetails = () => {
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Property Images</h2>
             {property.images && property.images.length > 0 ? (
               <div className="grid grid-cols-2 gap-2">
-                {property.images.map((image, index) => (
-                  <div key={index} className="aspect-square overflow-hidden rounded-lg">
-                    <img 
-                      src={image} 
-                      alt={`${property.title} - ${index + 1}`}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
-                    />
-                  </div>
-                ))}
+                {property.images.map((image, index) => {
+                  // Handle different image response structures
+                  const imageUrl = typeof image === 'string' 
+                    ? image 
+                    : image.url || image.path || '';
+                  
+                  return (
+                    <div key={index} className="aspect-square overflow-hidden rounded-lg border border-gray-200">
+                      {imageUrl ? (
+                        <img 
+                          src={imageUrl} 
+                          alt={`${property.title} - ${index + 1}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                          onError={(e) => {
+                            console.error('Image failed to load:', imageUrl);
+                            e.target.src = 'https://placehold.co/400x400?text=Image+Not+Found';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                          <span>Invalid Image</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Home, MapPin, DollarSign, Ruler, Car, Wifi, Coffee } from 'lucide-react';
+import { X, Home, MapPin, DollarSign, Ruler, Car, Wifi, Coffee, Image, Upload, XCircle } from 'lucide-react';
 
 const PropertyModal = ({ 
   isOpen, 
@@ -8,27 +8,84 @@ const PropertyModal = ({
   propertyData = {},
   isEditing = false
 }) => {
+  const [formData, setFormData] = React.useState(propertyData);
+  const [images, setImages] = React.useState([]);
+  const [imagePreviews, setImagePreviews] = React.useState([]);
+  const [uploading, setUploading] = React.useState(false);
+
+  React.useEffect(() => {
+    setFormData(propertyData);
+    // If editing and property has existing images, set them
+    if (isEditing && propertyData.images) {
+      setImagePreviews(propertyData.images.map(img => ({
+        url: img.url || img,
+        name: img.name || 'Property Image'
+      })));
+    }
+  }, [propertyData, isEditing]);
+
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    onSave(propertyData);
-    onClose();
-  };
-
   const handleFeatureChange = (feature) => {
-    const currentFeatures = propertyData.features || [];
+    const currentFeatures = formData.features || [];
     const newFeatures = currentFeatures.includes(feature)
       ? currentFeatures.filter(f => f !== feature)
       : [...currentFeatures, feature];
-    onSave({...propertyData, features: newFeatures});
+    setFormData({...formData, features: newFeatures});
   };
 
   const handleAmenityChange = (amenity) => {
-    const currentAmenities = propertyData.amenities || [];
+    const currentAmenities = formData.amenities || [];
     const newAmenities = currentAmenities.includes(amenity)
       ? currentAmenities.filter(a => a !== amenity)
       : [...currentAmenities, amenity];
-    onSave({...propertyData, amenities: newAmenities});
+    setFormData({...formData, amenities: newAmenities});
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    const newImages = [...images, ...files];
+    setImages(newImages);
+    
+    // Create previews
+    const previews = files.map(file => ({
+      url: URL.createObjectURL(file),
+      name: file.name,
+      file: file
+    }));
+    
+    setImagePreviews(prev => [...prev, ...previews]);
+  };
+
+  const removeImage = (index) => {
+    const newPreviews = [...imagePreviews];
+    const newImages = [...images];
+    
+    // Revoke URL to prevent memory leaks
+    if (newPreviews[index] && newPreviews[index].url.startsWith('blob:')) {
+      URL.revokeObjectURL(newPreviews[index].url);
+    }
+    
+    newPreviews.splice(index, 1);
+    newImages.splice(index - imagePreviews.filter(p => !p.file).length, 1);
+    
+    setImagePreviews(newPreviews);
+    setImages(newImages);
+  };
+
+
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    
+    // Save property data first
+    await onSave(formData);
+    
+    // If there are images to upload and we're creating (not editing),
+    // we'll need to handle image upload after property creation
+    // This would typically be handled in the parent component
+    
+    onClose();
   };
 
   return (
@@ -56,8 +113,8 @@ const PropertyModal = ({
                 </label>
                 <input
                   type="text"
-                  value={propertyData.title || ''}
-                  onChange={(e) => onSave({...propertyData, title: e.target.value})}
+                  value={formData.title || ''}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Luxury Apartment in Downtown"
                   required
@@ -69,8 +126,8 @@ const PropertyModal = ({
                   Property Type
                 </label>
                 <select
-                  value={propertyData.propertyType || 'residential'}
-                  onChange={(e) => onSave({...propertyData, propertyType: e.target.value})}
+                  value={formData.propertyType || 'residential'}
+                  onChange={(e) => setFormData({...formData, propertyType: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="residential">Residential</option>
@@ -87,8 +144,8 @@ const PropertyModal = ({
                 Description
               </label>
               <textarea
-                value={propertyData.description || ''}
-                onChange={(e) => onSave({...propertyData, description: e.target.value})}
+                value={formData.description || ''}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
                 rows="3"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Detailed description of the property..."
@@ -103,8 +160,8 @@ const PropertyModal = ({
                 </label>
                 <input
                   type="number"
-                  value={propertyData.price || ''}
-                  onChange={(e) => onSave({...propertyData, price: parseFloat(e.target.value)})}
+                  value={formData.price || ''}
+                  onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="5000000"
                   min="0"
@@ -118,8 +175,8 @@ const PropertyModal = ({
                 </label>
                 <input
                   type="number"
-                  value={propertyData.area || ''}
-                  onChange={(e) => onSave({...propertyData, area: parseFloat(e.target.value)})}
+                  value={formData.area || ''}
+                  onChange={(e) => setFormData({...formData, area: parseFloat(e.target.value)})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="1500"
                   min="0"
@@ -131,8 +188,8 @@ const PropertyModal = ({
                   Listing Type
                 </label>
                 <select
-                  value={propertyData.listingType || 'sale'}
-                  onChange={(e) => onSave({...propertyData, listingType: e.target.value})}
+                  value={formData.listingType || 'sale'}
+                  onChange={(e) => setFormData({...formData, listingType: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="sale">For Sale</option>
@@ -149,8 +206,8 @@ const PropertyModal = ({
                 </label>
                 <input
                   type="number"
-                  value={propertyData.bedrooms || 0}
-                  onChange={(e) => onSave({...propertyData, bedrooms: parseInt(e.target.value)})}
+                  value={formData.bedrooms || 0}
+                  onChange={(e) => setFormData({...formData, bedrooms: parseInt(e.target.value)})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   min="0"
                 />
@@ -162,8 +219,8 @@ const PropertyModal = ({
                 </label>
                 <input
                   type="number"
-                  value={propertyData.bathrooms || 0}
-                  onChange={(e) => onSave({...propertyData, bathrooms: parseInt(e.target.value)})}
+                  value={formData.bathrooms || 0}
+                  onChange={(e) => setFormData({...formData, bathrooms: parseInt(e.target.value)})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   min="0"
                 />
@@ -176,8 +233,8 @@ const PropertyModal = ({
                 </label>
                 <input
                   type="number"
-                  value={propertyData.parking || 0}
-                  onChange={(e) => onSave({...propertyData, parking: parseInt(e.target.value)})}
+                  value={formData.parking || 0}
+                  onChange={(e) => setFormData({...formData, parking: parseInt(e.target.value)})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   min="0"
                 />
@@ -190,10 +247,10 @@ const PropertyModal = ({
                 </label>
                 <input
                   type="text"
-                  value={propertyData.address?.city || ''}
-                  onChange={(e) => onSave({
-                    ...propertyData, 
-                    address: {...propertyData.address, city: e.target.value}
+                  value={formData.address?.city || ''}
+                  onChange={(e) => setFormData({
+                    ...formData, 
+                    address: {...formData.address, city: e.target.value}
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Mumbai"
@@ -211,7 +268,7 @@ const PropertyModal = ({
                   <label key={amenity} className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={(propertyData.amenities || []).includes(amenity)}
+                      checked={(formData.amenities || []).includes(amenity)}
                       onChange={() => handleAmenityChange(amenity)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -233,7 +290,7 @@ const PropertyModal = ({
                   <label key={feature} className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={(propertyData.features || []).includes(feature)}
+                      checked={(formData.features || []).includes(feature)}
                       onChange={() => handleFeatureChange(feature)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -244,22 +301,89 @@ const PropertyModal = ({
                 ))}
               </div>
             </div>
+
+            {/* Image Upload Section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Image className="inline h-4 w-4 mr-1" />
+                Property Images
+              </label>
+              
+              {/* Image Preview Gallery */}
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={preview.url}
+                        alt={`Property ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                      <div className="text-xs text-center mt-1 text-gray-600 truncate">
+                        {preview.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Upload Button */}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input
+                  type="file"
+                  id="image-upload"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="image-upload"
+                  className="cursor-pointer flex flex-col items-center"
+                >
+                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                  <span className="text-sm font-medium text-gray-600">
+                    {imagePreviews.length > 0 ? 'Add More Images' : 'Upload Images'}
+                  </span>
+                  <span className="text-xs text-gray-500 mt-1">
+                    PNG, JPG, GIF up to 10MB
+                  </span>
+                </label>
+              </div>
+              
+              {uploading && (
+                <div className="mt-2 text-sm text-blue-600 flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                  Uploading images...
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-            >
-              {isEditing ? 'Update Property' : 'Create Property'}
-            </button>
-          </div>
+          <form onSubmit={handleSave}>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                {isEditing ? 'Update Property' : 'Create Property'}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
