@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Eye, Calendar, User, Mail, Phone, CheckCircle, Clock, XCircle, Calendar as CalendarIcon, DollarSign } from 'lucide-react';
+import { Search, Eye, Calendar, User, Mail, Phone, CheckCircle, Clock, XCircle, Calendar as CalendarIcon, DollarSign, X } from 'lucide-react';
 import { 
   getAllPropertyListings, 
   getPropertyListingStats,
@@ -16,8 +16,7 @@ const PropertyListings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentListing, setCurrentListing] = useState(null);
-  const [showViewModal, setShowViewModal] = useState(false);
+
   const [stats, setStats] = useState({
     totalListings: 0,
     inquiries: 0,
@@ -422,123 +421,7 @@ const PropertyListings = () => {
         )}
       </div>
 
-      {/* View Listing Modal */}
-      {showViewModal && currentListing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-screen overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">Listing Details</h2>
-                <button
-                  onClick={() => setShowViewModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
 
-              <div className="space-y-6">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-gray-800 mb-3">Customer Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600">Name</label>
-                      <p className="text-gray-900">{currentListing.customerInfo?.name || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600">Email</label>
-                      <p className="text-gray-900">{currentListing.customerInfo?.email || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600">Phone</label>
-                      <p className="text-gray-900">{currentListing.customerInfo?.phone || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600">Property ID</label>
-                      <p className="text-gray-900 font-mono">
-                        {typeof currentListing.propertyId === 'object' && currentListing.propertyId 
-                          ? currentListing.propertyId._id || 'N/A'
-                          : currentListing.propertyId || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-gray-800 mb-3">Listing Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600">Listing Type</label>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getListingTypeColor(currentListing.listingType)}`}>
-                        {currentListing.listingType}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600">Status</label>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(currentListing.status)}`}>
-                        {getStatusIcon(currentListing.status)}
-                        <span className="ml-1">{currentListing.status}</span>
-                      </span>
-                    </div>
-                    {currentListing.offerPrice && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-600">Offer Price</label>
-                        <p className="text-gray-900">₹{currentListing.offerPrice?.toLocaleString()}</p>
-                      </div>
-                    )}
-                    {currentListing.proposedRent && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-600">Proposed Rent</label>
-                        <p className="text-gray-900">₹{currentListing.proposedRent?.toLocaleString()}/month</p>
-                      </div>
-                    )}
-                    {currentListing.leaseDuration && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-600">Lease Duration</label>
-                        <p className="text-gray-900">{currentListing.leaseDuration}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {currentListing.customerInfo?.message && (
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-medium text-gray-800 mb-2">Customer Message</h3>
-                    <p className="text-gray-700">{currentListing.customerInfo.message}</p>
-                  </div>
-                )}
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-gray-800 mb-3">Timeline</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Created</span>
-                      <span className="text-sm text-gray-900">
-                        {new Date(currentListing.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Last Updated</span>
-                      <span className="text-sm text-gray-900">
-                        {new Date(currentListing.updatedAt).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowViewModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

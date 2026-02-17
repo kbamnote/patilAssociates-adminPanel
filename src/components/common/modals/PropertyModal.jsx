@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 import { X, Home, MapPin, DollarSign, Ruler, Car, Wifi, Coffee, Image, Upload, XCircle } from 'lucide-react';
 

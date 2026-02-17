@@ -46,6 +46,14 @@ Apiauth.interceptors.request.use(
 export const login = (post) => Apiauth.post("/auth/login", post);
 export const signup = (post) => Apiauth.post("/auth/signup", post);
 
+// Dashboard APIs (Admin Only)
+export const getDashboardOverviewStats = () => Api.get("/dashboard/stats");
+export const getDashboardRevenueAnalytics = (params = {}) => Api.get("/dashboard/analytics/revenue", { params });
+export const getDashboardBookingAnalytics = (params = {}) => Api.get("/dashboard/analytics/bookings", { params });
+export const getDashboardUserAnalytics = () => Api.get("/dashboard/analytics/users");
+export const getDashboardPropertyAnalytics = () => Api.get("/dashboard/analytics/properties");
+export const getDashboardRealtimeStats = () => Api.get("/dashboard/realtime");
+
 // User Management APIs (admin only)
 export const getAllUsers = (params = {}) => {
   const { page = 1, limit = 12, ...filters } = params;
@@ -288,3 +296,221 @@ export const getQueryById = (id) => Api.get(`/queries/${id}`);
 export const updateQueryStatus = (id, data) => Api.put(`/queries/${id}/status`, data);
 
 export const deleteQuery = (id) => Api.delete(`/queries/${id}`);
+
+// Additional APIs for enhanced functionality
+
+// Notification APIs
+export const getAllNotifications = (params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get('/notifications', { params: queryParams });
+};
+
+export const markNotificationAsRead = (id) => Api.put(`/notifications/${id}/read`);
+
+export const markAllNotificationsAsRead = () => Api.put('/notifications/read-all');
+
+export const deleteNotification = (id) => Api.delete(`/notifications/${id}`);
+
+export const getUnreadNotificationsCount = () => Api.get('/notifications/unread-count');
+
+// Activity Log APIs
+export const getAllActivities = (params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get('/activities', { params: queryParams });
+};
+
+export const getActivityById = (id) => Api.get(`/activities/${id}`);
+
+export const getUserActivities = (userId, params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get(`/activities/user/${userId}`, { params: queryParams });
+};
+
+// Settings APIs
+export const getSystemSettings = () => Api.get('/settings');
+
+export const updateSystemSettings = (data) => Api.put('/settings', data);
+
+export const getSettingByKey = (key) => Api.get(`/settings/${key}`);
+
+export const updateSettingByKey = (key, data) => Api.put(`/settings/${key}`, data);
+
+// Reports APIs
+export const generateReport = (reportType, params = {}) => {
+  return Api.post(`/reports/${reportType}/generate`, params, {
+    responseType: 'blob'
+  });
+};
+
+export const getReportHistory = (params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get('/reports/history', { params: queryParams });
+};
+
+export const downloadReport = (reportId) => {
+  return Api.get(`/reports/download/${reportId}`, {
+    responseType: 'blob'
+  });
+};
+
+// Export APIs
+export const exportData = (dataType, format = 'csv', params = {}) => {
+  return Api.get(`/export/${dataType}`, {
+    params: { format, ...params },
+    responseType: 'blob'
+  });
+};
+
+// Import APIs
+export const importData = (dataType, formData) => {
+  return Api.post(`/import/${dataType}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+};
+
+export const getImportHistory = (params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get('/import/history', { params: queryParams });
+};
+
+// Cache Management APIs
+export const clearCache = () => Api.post('/cache/clear');
+
+export const getCacheStats = () => Api.get('/cache/stats');
+
+export const refreshCache = (cacheKey) => Api.post(`/cache/refresh/${cacheKey}`);
+
+// System Health APIs
+export const getSystemHealth = () => Api.get('/health');
+
+export const getSystemMetrics = () => Api.get('/metrics');
+
+export const getSystemLogs = (params = {}) => {
+  const { page = 1, limit = 50, level, ...filters } = params;
+  const queryParams = { page, limit, level, ...filters };
+  return Api.get('/logs', { params: queryParams });
+};
+
+// Enhanced Property APIs
+export const getPropertyInquiries = (propertyId, params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get(`/properties/${propertyId}/inquiries`, { params: queryParams });
+};
+
+export const createPropertyInquiry = (propertyId, data) => Api.post(`/properties/${propertyId}/inquiries`, data);
+
+export const updatePropertyInquiry = (propertyId, inquiryId, data) => Api.put(`/properties/${propertyId}/inquiries/${inquiryId}`, data);
+
+export const deletePropertyInquiry = (propertyId, inquiryId) => Api.delete(`/properties/${propertyId}/inquiries/${inquiryId}`);
+
+// Property Viewing APIs
+export const schedulePropertyViewing = (propertyId, data) => Api.post(`/properties/${propertyId}/viewings`, data);
+
+export const getPropertyViewings = (propertyId, params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get(`/properties/${propertyId}/viewings`, { params: queryParams });
+};
+
+export const updatePropertyViewing = (propertyId, viewingId, data) => Api.put(`/properties/${propertyId}/viewings/${viewingId}`, data);
+
+export const cancelPropertyViewing = (propertyId, viewingId) => Api.delete(`/properties/${propertyId}/viewings/${viewingId}`);
+
+// Enhanced Hotel APIs
+export const getHotelRoomTypes = () => Api.get('/hotel/room-types');
+
+export const createHotelRoomType = (data) => Api.post('/hotel/room-types', data);
+
+export const updateHotelRoomType = (id, data) => Api.put(`/hotel/room-types/${id}`, data);
+
+export const deleteHotelRoomType = (id) => Api.delete(`/hotel/room-types/${id}`);
+
+export const getHotelAmenities = () => Api.get('/hotel/amenities');
+
+export const getHotelFloorStats = () => Api.get('/hotel/floors/stats');
+
+// Enhanced Restaurant APIs
+export const getRestaurantCategories = () => Api.get('/restaurant/categories');
+
+export const createRestaurantCategory = (data) => Api.post('/restaurant/categories', data);
+
+export const updateRestaurantCategory = (id, data) => Api.put(`/restaurant/categories/${id}`, data);
+
+export const deleteRestaurantCategory = (id) => Api.delete(`/restaurant/categories/${id}`);
+
+export const getRestaurantOrders = (params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get('/restaurant/orders', { params: queryParams });
+};
+
+export const getRestaurantOrderById = (id) => Api.get(`/restaurant/orders/${id}`);
+
+export const updateRestaurantOrder = (id, data) => Api.put(`/restaurant/orders/${id}`, data);
+
+export const deleteRestaurantOrder = (id) => Api.delete(`/restaurant/orders/${id}`);
+
+// Staff Management APIs
+export const getAllStaff = (params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get('/staff', { params: queryParams });
+};
+
+export const getStaffById = (id) => Api.get(`/staff/${id}`);
+
+export const createStaff = (data) => Api.post('/staff', data);
+
+export const updateStaff = (id, data) => Api.put(`/staff/${id}`, data);
+
+export const deleteStaff = (id) => Api.delete(`/staff/${id}`);
+
+export const getStaffStats = () => Api.get('/staff/stats');
+
+// Inventory Management APIs
+export const getAllInventory = (params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get('/inventory', { params: queryParams });
+};
+
+export const getInventoryById = (id) => Api.get(`/inventory/${id}`);
+
+export const createInventoryItem = (data) => Api.post('/inventory', data);
+
+export const updateInventoryItem = (id, data) => Api.put(`/inventory/${id}`, data);
+
+export const deleteInventoryItem = (id) => Api.delete(`/inventory/${id}`);
+
+export const getInventoryStats = () => Api.get('/inventory/stats');
+
+export const getLowStockItems = () => Api.get('/inventory/low-stock');
+
+// Customer Management APIs
+export const getAllCustomers = (params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get('/customers', { params: queryParams });
+};
+
+export const getCustomerById = (id) => Api.get(`/customers/${id}`);
+
+export const createCustomer = (data) => Api.post('/customers', data);
+
+export const updateCustomer = (id, data) => Api.put(`/customers/${id}`, data);
+
+export const deleteCustomer = (id) => Api.delete(`/customers/${id}`);
+
+export const getCustomerStats = () => Api.get('/customers/stats');
+
+export const getCustomerOrders = (customerId, params = {}) => {
+  const { page = 1, limit = 12, ...filters } = params;
+  const queryParams = { page, limit, ...filters };
+  return Api.get(`/customers/${customerId}/orders`, { params: queryParams });
+};
