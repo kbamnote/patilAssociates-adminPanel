@@ -231,6 +231,8 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+
+
   const route = routeMap[location.pathname];
 
   const getPageInfo = () => {

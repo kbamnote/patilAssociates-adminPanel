@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
@@ -71,40 +71,18 @@ const LAYOUT_STYLES = `
 `;
 
 const Layout = ({ children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [userToggled, setUserToggled] = useState(false);
-
-  useEffect(() => {
-    let timer;
-    const handleResize = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        if (window.innerWidth < 1024 && !userToggled) {
-          setIsSidebarOpen(false);
-        }
-      }, 250);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(timer);
-    };
-  }, [userToggled]);
-
+  // Sidebar is always open now, no state needed
   const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
-    setUserToggled(true);
-    setTimeout(() => setUserToggled(false), 500);
+    // No toggle functionality needed
   };
 
   return (
     <>
       <style>{LAYOUT_STYLES}</style>
       <div className="layout-root">
-        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+        <Sidebar />
         <div className="layout-main">
-          <Header isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+          <Header isSidebarOpen={true} toggleSidebar={toggleSidebar} />
           <main className="layout-content">
             {children}
           </main>

@@ -51,18 +51,13 @@ const SIDEBAR_STYLES = `
     flex-direction: column;
     border-right: 1px solid var(--sb-border);
     box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
-    transform: translateX(-100%);
-    opacity: 0;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(0);
+    opacity: 1;
   }
 
   .sb-panel.is-open {
     transform: translateX(0);
     opacity: 1;
-  }
-
-  @media (min-width: 1024px) {
-    .sb-panel { transform: translateX(0); }
   }
 
   /* Brand */
@@ -479,7 +474,7 @@ const navItems = [
   },
 ];
 
-const Sidebar = ({ isOpen, toggleSidebar }) => {
+const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [openMenus, setOpenMenus] = useState({});
@@ -498,20 +493,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   };
 
   const handleNavClick = () => {
-    if (window.innerWidth < 1024) toggleSidebar();
+    // Sidebar is always open now, no need to toggle
   };
 
   return (
     <div className="sb-root">
       <style>{SIDEBAR_STYLES}</style>
 
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div className="sb-overlay lg:hidden" onClick={toggleSidebar} />
-      )}
-
-      {/* Panel */}
-      <aside className={`sb-panel ${isOpen ? 'is-open' : ''}`}>
+      {/* Panel - Always visible */}
+      <aside className="sb-panel is-open">
         {/* Brand */}
         <div className="sb-brand">
           <div className="sb-brand-mark">
